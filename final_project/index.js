@@ -13,12 +13,19 @@ app.use("/customer",session({secret:"fingerprint_customer",resave: true, saveUni
 
 app.use("/customer/auth/*", function auth(req,res,next){
 //Write the authenication mechanism here
-    if (req.session && req.session.user) {
+    
+    const authHeader = req.headers['authorization']
+        if (!authHeader) return res.status(401).json({ message: "No token provided" });
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token == null) return res.status(401).json({ message: "Token is invalid" });
+
+    jwt.verify(token,jwtSecret, (err, user) => {
+        if (err){
+            return res.status(403).json({message: "Token is Invalid"})
+        }
+        req.user = user;
         next();
-    }
-    else{
-        return res.status(403).json({ message: "User is not logged in" });   
-    }
+    });
 });
  
 const PORT =5000;
@@ -27,3 +34,4 @@ app.use("/customer", customer_routes);
 app.use("/", genl_routes);
 
 app.listen(PORT,()=>console.log("Server is running"));
+
